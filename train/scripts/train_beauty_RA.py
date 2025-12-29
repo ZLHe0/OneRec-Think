@@ -291,12 +291,13 @@ if __name__ == "__main__":
         print(f"\\nStarting training...")
     trainer.train()
 
-    if training_args.local_rank == 0:
-        print(f"\\nFinal evaluation...")
-    result = trainer.evaluate()
-    if training_args.local_rank == 0:
-        print("Final evaluation result:")
-        print(result)
+    # Commenting out evaluation to avoid OOM issues
+    # if training_args.local_rank == 0:
+    #     print(f"\\nFinal evaluation...")
+    # result = trainer.evaluate()
+    # if training_args.local_rank == 0:
+    #     print("Final evaluation result:")
+    #     print(result)
 
     if training_args.local_rank == 0:
         print(f"\\nSaving model...")

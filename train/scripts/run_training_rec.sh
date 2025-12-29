@@ -11,7 +11,6 @@ USE_LORA=false
 
 DEEPSPEED_CMD=(
     deepspeed
-    --hostfile=./scripts/hostfile
     --num_gpus 8
     ./scripts/train_beauty_sid_rec.py
     --model_name_or_path "${MODEL_DIR}"

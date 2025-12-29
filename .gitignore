@@ -1,0 +1,62 @@
+# Large model files
+basemodel/Qwen3-1-7B/
+basemodel/Qwen3-1-7B-expand/
+basemodel/merged_beauty_model_1-1/
+
+# Training results and checkpoints
+train/results/
+
+# Data files
+data/*.parquet
+data/*.pkl
+
+# Log files
+*.log
+*.nohup
+test/logs_*/
+test/cot_eval_*.log
+
+# Evaluation cache files
+test/exact_trie.pkl
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+=4.36.0
+
+# DeepSpeed
+.deepspeed*

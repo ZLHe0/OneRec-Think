@@ -56,7 +56,7 @@ for gpu_id in {0..7}; do
     
     echo "🔄 Starting GPU $gpu_id: samples $offset-$((offset + SAMPLES_PER_GPU - 1))"
 
-    CUDA_VISIBLE_DEVICES=$gpu_id nohup python3 -u test_model_hitrate.py \
+    CUDA_VISIBLE_DEVICES=$gpu_id nohup conda run -n onerec-think python3 -u test_model_hitrate.py \
         --merged_model_path "${MERGED_MODEL_PATH}" \
         --additional_lora_path "${ADDITIONAL_LORA_PATH}" \
         --test_parquet_file "${TEST_PARQUET}" \

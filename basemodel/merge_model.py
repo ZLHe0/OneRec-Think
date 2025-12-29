@@ -8,7 +8,7 @@ import shutil
 
 def merge_and_save_models():
     base_model_path = './Qwen3-1-7B-expand'
-    lora_model_path = '../train/results/beauty_align/checkpoint-5250'
+    lora_model_path = '../train/results/beauty_align/checkpoint-10000'
     output_path = './merged_beauty_model_1-1'
     
     print("="*80)

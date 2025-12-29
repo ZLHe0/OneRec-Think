@@ -187,7 +187,7 @@ if __name__ == "__main__":
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
         data_collator=data_collator,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
+        # callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
     )
 
     if training_args.local_rank == 0:

@@ -7,26 +7,23 @@ MODEL_DIR="../basemodel/Qwen3-1-7B-expand"
 TRAIN_DATA="../data/training_align_data_train.parquet"
 VAL_DATA="../data/training_align_data_val.parquet"
 
-nohup deepspeed --hostfile=./scripts/hostfile \
-    --num_gpus 8 ./scripts/train_beauty_align.py \
+nohup deepspeed --num_gpus 8 ./scripts/train_beauty_align.py \
     --model_dir "${MODEL_DIR}" \
     --train_data_path "${TRAIN_DATA}" \
     --val_data_path "${VAL_DATA}" \
-    --per_device_train_batch_size 8 \
-    --num_train_epochs 15 \
+    --per_device_train_batch_size 4 \
+    --num_train_epochs 1 \
     --gradient_checkpointing True \
     --bf16 True \
     --deepspeed ./scripts/ds_config_zero2.json \
     --output_dir ./results/beauty_align \
     --logging_dir ./logs/beauty_sid_align \
     --logging_steps 10 \
-    --eval_strategy epoch \
-    --eval_on_start False \
-    --save_strategy epoch \
-    --save_total_limit 15 \
-    --metric_for_best_model eval_loss \
-    --greater_is_better False \
-    --load_best_model_at_end True \
+    --eval_strategy no \
+    --save_strategy steps \
+    --save_steps 5000 \
+    --save_total_limit 10 \
+    --load_best_model_at_end False \
     --optim adamw_torch \
     --learning_rate 1e-4 \
     --warmup_ratio 0.0 \
@@ -35,5 +32,6 @@ nohup deepspeed --hostfile=./scripts/hostfile \
     --adam_beta2 0.999 \
     --adam_epsilon 1e-8 \
     --max_grad_norm 1.0 \
+    --max_steps 10000 \
     --dataloader_num_workers 4 \
     --remove_unused_columns False >> beauty_align.log 2>&1 &

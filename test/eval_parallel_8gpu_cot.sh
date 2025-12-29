@@ -4,7 +4,7 @@
 
 echo "[INFO] Starting 8-GPU Parallel CoT Evaluation..."
 
-MERGED_MODEL_PATH="../train/results/ReasoningActivation/epoch_2/checkpoint-125"
+MERGED_MODEL_PATH="../train/results/ReasoningActivation/epoch_1/checkpoint-2796"
 ADDITIONAL_LORA_PATH=""
 TEST_PARQUET="../data/training_RA_test.parquet"
 GLOBAL_TRIE_FILE="./exact_trie.pkl"
@@ -59,7 +59,7 @@ for gpu_id in {0..7}; do
     
     echo "[INFO] Starting CoT GPU $gpu_id: samples $offset-$((offset + SAMPLES_PER_GPU - 1))"
 
-    CUDA_VISIBLE_DEVICES=$gpu_id nohup python3 -u test_model_hitrate_cot.py \
+    CUDA_VISIBLE_DEVICES=$gpu_id nohup conda run -n onerec-think python3 -u test_model_hitrate_cot.py \
         --merged_model_path "${MERGED_MODEL_PATH}" \
         --additional_lora_path "${ADDITIONAL_LORA_PATH}" \
         --test_parquet_file "${TEST_PARQUET}" \
