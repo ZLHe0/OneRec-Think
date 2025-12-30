@@ -521,7 +521,7 @@ def save_model_and_tokenizer(model, tokenizer, config: FineTuneConfig):
 
 if __name__ == "__main__":
     parser = HfArgumentParser(FineTuneConfig)
-    (config,) = parser.parse_args_into_dataclasses()
+    (config,) = parser.parse_args_into_dataclasses(return_remaining_strings=True)[:1]
     device_manager = DeviceManager(logger)
 
     run_name = f"qwen3-vocab-{config.category}-lr{config.learning_rate}"

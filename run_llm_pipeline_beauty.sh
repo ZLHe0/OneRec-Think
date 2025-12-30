@@ -66,7 +66,7 @@ DATA_DIR="${DATA_DIR:-data}"
 RESULTS_DIR="${RESULTS_DIR:-results}"
 LOG_DIR="${LOG_DIR:-logs}"
 NUM_GPUS="${NUM_GPUS:-}"
-DEEPSPEED_CONFIG="${DEEPSPEED_CONFIG:-train/scripts/ds_config_zero2.json}"
+DEEPSPEED_CONFIG="${DEEPSPEED_CONFIG:-train/scripts/ds_config_zero3.json}"
 HOSTFILE="${HOSTFILE:-}"
 
 mkdir -p "${RESULTS_DIR}" "${LOG_DIR}"
@@ -99,6 +99,9 @@ if [[ "${NUM_GPUS}" -lt 1 ]]; then
 fi
 
 export TOKENIZERS_PARALLELISM=false
+export HF_HOME=/work/.cache/huggingface
+export TRANSFORMERS_CACHE=/work/.cache/huggingface/transformers
+export HF_DATASETS_CACHE=/work/.cache/huggingface/datasets
 
 DEEPSPEED_CMD=(deepspeed --num_gpus "${NUM_GPUS}")
 if [[ -n "${HOSTFILE}" ]]; then
