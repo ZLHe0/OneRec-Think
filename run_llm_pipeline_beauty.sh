@@ -50,7 +50,6 @@ if [[ "${SKIP_PIP_INSTALL:-0}" != "1" ]]; then
     accelerate \
     huggingface-hub \
     trl \
-    unsloth \
     bitsandbytes \
     deepspeed \
     pandas \

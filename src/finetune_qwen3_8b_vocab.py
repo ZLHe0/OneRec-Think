@@ -6,9 +6,6 @@ Stage 1: Embedding initialization - trains only new token embeddings.
 Adapted from semantic-ids-llm for OneRec-Think Beauty dataset.
 """
 
-# Unsloth should be imported before trl, transformers, peft
-from unsloth import FastLanguageModel, is_bfloat16_supported, add_new_tokens  # isort: skip
-
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,7 +14,8 @@ from typing import Optional
 import numpy as np
 import torch
 from datasets import load_dataset
-from transformers import HfArgumentParser, TrainerCallback
+from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser, TrainerCallback
+from transformers.deepspeed import HfDeepSpeedConfig
 from trl import SFTConfig, SFTTrainer
 
 import wandb
@@ -26,12 +24,17 @@ from utils import DeviceManager, setup_logger, SYSTEM_PROMPT, REC_TEST_PROMPTS
 logger = setup_logger("finetune-qwen3-vocab", log_to_file=True)
 
 
+def is_bf16_supported() -> bool:
+    """Return True when bf16 is available on the current CUDA device."""
+    return torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+
+
 @dataclass
 class FineTuneConfig:
     """Configuration for Stage 1: Embedding initialization."""
 
     # Model settings
-    model_name: str = "unsloth/Qwen3-8B"
+    model_name: str = "Qwen/Qwen3-8B"
     max_seq_length: int = 2048
     dtype: Optional[torch.dtype] = None  # None for auto detection
     load_in_4bit: bool = False  # Must be False for embedding training
@@ -81,7 +84,7 @@ class FineTuneConfig:
     def __post_init__(self):
         """Post-initialization setup and validation."""
         if self.dtype is None:
-            self.dtype = torch.float16 if not is_bfloat16_supported() else torch.bfloat16
+            self.dtype = torch.float16 if not is_bf16_supported() else torch.bfloat16
 
         # Create output directory
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -140,7 +143,7 @@ class FineTuneConfig:
 
 
 def extend_tokenizer(model, tokenizer, config: FineTuneConfig):
-    """Add semantic ID tokens to the tokenizer using Unsloth's add_new_tokens."""
+    """Add semantic ID tokens to the tokenizer and resize embeddings."""
     logger.info("=== Extending tokenizer with semantic ID tokens ===")
 
     original_vocab_size = len(tokenizer)
@@ -169,8 +172,9 @@ def extend_tokenizer(model, tokenizer, config: FineTuneConfig):
     logger.info(f"  Special: <|rec|>, <|sid_start|>, <|sid_end|>")
     logger.info(f"  Semantic IDs: <|sid_0|> to <|sid_{config.num_semantic_tokens - 1}|>")
 
-    # Add tokens using Unsloth
-    add_new_tokens(model, tokenizer, new_tokens=new_tokens)
+    # Add tokens and resize embeddings
+    tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
+    model.resize_token_embeddings(len(tokenizer))
 
     new_vocab_size = len(tokenizer)
     new_embedding_size = model.get_input_embeddings().weight.shape[0]
@@ -435,8 +439,8 @@ def train_embeddings(model, tokenizer, config: FineTuneConfig, num_new_tokens: i
         seed=config.random_state,
         output_dir=str(config.output_dir),
         save_steps=config.save_steps,
-        fp16=not is_bfloat16_supported(),
-        bf16=is_bfloat16_supported(),
+        fp16=not is_bf16_supported(),
+        bf16=is_bf16_supported(),
         report_to="wandb",
         save_strategy="steps",
         gradient_checkpointing=config.gradient_checkpointing,
@@ -521,20 +525,24 @@ def save_model_and_tokenizer(model, tokenizer, config: FineTuneConfig):
 
 if __name__ == "__main__":
     parser = HfArgumentParser(FineTuneConfig)
-    (config,) = parser.parse_args_into_dataclasses(return_remaining_strings=True)[:1]
+    (config,) = parser.parse_args_into_dataclasses()
     device_manager = DeviceManager(logger)
 
     run_name = f"qwen3-vocab-{config.category}-lr{config.learning_rate}"
     wandb.init(project="onerec-semantic-id-vocab", name=run_name, config=config.__dict__)
     config.log_config()
 
+    if config.deepspeed:
+        HfDeepSpeedConfig(config.deepspeed)
+
     logger.info("Loading base model")
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=config.model_name,
-        max_seq_length=config.max_seq_length,
-        dtype=config.dtype,
+    model = AutoModelForCausalLM.from_pretrained(
+        config.model_name,
+        torch_dtype=config.dtype,
+        low_cpu_mem_usage=True,
         load_in_4bit=config.load_in_4bit,
     )
+    tokenizer = AutoTokenizer.from_pretrained(config.model_name, use_fast=True)
 
     num_new_tokens = 0
     if config.extend_vocabulary:

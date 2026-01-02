@@ -5,7 +5,7 @@ End-to-end guide for training a Qwen3-8B model on OneRec-Think Beauty dataset wi
 ## Quick Start (One Command)
 
 ```bash
-NUM_GPUS=8 DEEPSPEED_CONFIG=train/scripts/ds_config_zero2.json \
+NUM_GPUS=8 DEEPSPEED_CONFIG=train/scripts/ds_config_zero3.json \
   bash run_llm_pipeline_beauty.sh
 ```
 
@@ -53,7 +53,7 @@ Key environment variables:
 ### Python Dependencies
 
 ```bash
-pip install torch pandas pyarrow transformers tqdm wandb unsloth datasets trl bitsandbytes deepspeed
+pip install torch pandas pyarrow transformers tqdm wandb datasets trl bitsandbytes deepspeed accelerate huggingface-hub
 ```
 
 ### Hardware Requirements
@@ -169,7 +169,7 @@ python src/finetune_qwen3_8b_vocab.py \
 
 # Multi-GPU (DeepSpeed)
 deepspeed --num_gpus 8 src/finetune_qwen3_8b_vocab.py \
-  --deepspeed train/scripts/ds_config_zero2.json
+  --deepspeed train/scripts/ds_config_zero3.json
 ```
 
 **Key Parameters:**
@@ -210,7 +210,7 @@ python src/finetune_qwen3_8b_full.py \
 
 # Multi-GPU (DeepSpeed)
 deepspeed --num_gpus 8 src/finetune_qwen3_8b_full.py \
-  --deepspeed train/scripts/ds_config_zero2.json
+  --deepspeed train/scripts/ds_config_zero3.json
 ```
 
 **Key Parameters:**
@@ -322,7 +322,7 @@ Run all steps sequentially:
 
 ```bash
 # End-to-end pipeline (creates conda env, installs deps, runs all steps)
-NUM_GPUS=8 DEEPSPEED_CONFIG=train/scripts/ds_config_zero2.json \
+NUM_GPUS=8 DEEPSPEED_CONFIG=train/scripts/ds_config_zero3.json \
   bash run_llm_pipeline_beauty.sh
 ```
 
@@ -406,7 +406,7 @@ python src/generate_training_data_onerec.py \
 1. **semantic-ids-llm**: [github.com/marceloabk/semantic-ids-llm](https://github.com/marceloabk/semantic-ids-llm)
 2. **OneRec-Think**: Original repository (this fork)
 3. **Qwen3**: [Qwen/Qwen3-8B on HuggingFace](https://huggingface.co/Qwen/Qwen3-8B)
-4. **Unsloth**: [github.com/unslothai/unsloth](https://github.com/unslothai/unsloth)
+4. **Transformers**: [github.com/huggingface/transformers](https://github.com/huggingface/transformers)
 
 ---
 

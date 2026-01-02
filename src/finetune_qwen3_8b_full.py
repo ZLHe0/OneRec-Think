@@ -6,9 +6,6 @@ Stage 2: Full fine-tuning - trains all model parameters.
 Adapted from semantic-ids-llm for OneRec-Think Beauty dataset.
 """
 
-# Unsloth should be imported before trl, transformers, peft
-from unsloth import FastLanguageModel, is_bfloat16_supported  # isort: skip
-
 import glob
 import json
 import os
@@ -19,13 +16,19 @@ from typing import Optional
 
 import torch
 from datasets import load_dataset
-from transformers import HfArgumentParser, TrainerCallback
+from transformers import AutoModelForCausalLM, AutoTokenizer, HfArgumentParser, TrainerCallback
+from transformers.deepspeed import HfDeepSpeedConfig
 from trl import SFTConfig, SFTTrainer
 
 import wandb
 from utils import DeviceManager, setup_logger, SYSTEM_PROMPT, REC_TEST_PROMPTS
 
 logger = setup_logger("finetune-qwen3-full", log_to_file=True)
+
+
+def is_bf16_supported() -> bool:
+    """Return True when bf16 is available on the current CUDA device."""
+    return torch.cuda.is_available() and torch.cuda.is_bf16_supported()
 
 
 @dataclass
@@ -89,7 +92,7 @@ class FullFineTuneConfig:
     def __post_init__(self):
         """Post-initialization setup and validation."""
         if self.dtype is None:
-            self.dtype = torch.bfloat16 if is_bfloat16_supported() else torch.float16
+            self.dtype = torch.bfloat16 if is_bf16_supported() else torch.float16
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -174,12 +177,13 @@ def load_vocab_extended_model(config: FullFineTuneConfig):
     """Load the model from Stage 1 checkpoint with extended vocabulary."""
     logger.info(f"Loading Stage 1 checkpoint from: {config.model_name}")
 
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name=config.model_name,
-        max_seq_length=config.max_seq_length,
-        dtype=config.dtype,
+    model = AutoModelForCausalLM.from_pretrained(
+        config.model_name,
+        torch_dtype=config.dtype,
+        low_cpu_mem_usage=True,
         load_in_4bit=config.load_in_4bit,
     )
+    tokenizer = AutoTokenizer.from_pretrained(config.model_name, use_fast=True)
 
     vocab_size = len(tokenizer)
     logger.info(f"Loaded model with vocabulary size: {vocab_size}")
@@ -464,8 +468,8 @@ def train_full_model(model, tokenizer, config: FullFineTuneConfig):
         seed=config.random_state,
         output_dir=str(config.output_dir),
         save_steps=config.save_steps,
-        fp16=not is_bfloat16_supported(),
-        bf16=is_bfloat16_supported(),
+        fp16=not is_bf16_supported(),
+        bf16=is_bf16_supported(),
         report_to="wandb",
         save_strategy=config.save_strategy,
         gradient_checkpointing=config.gradient_checkpointing,
@@ -545,12 +549,15 @@ def save_final_model(model, tokenizer, config: FullFineTuneConfig):
 
 if __name__ == "__main__":
     parser = HfArgumentParser(FullFineTuneConfig)
-    (config,) = parser.parse_args_into_dataclasses(return_remaining_strings=True)[:1]
+    (config,) = parser.parse_args_into_dataclasses()
     device_manager = DeviceManager(logger)
 
     run_name = f"qwen3-full-{config.category}-lr{config.learning_rate}"
     wandb.init(project="onerec-semantic-id-full", name=run_name, config=config.__dict__)
     config.log_config()
+
+    if config.deepspeed:
+        HfDeepSpeedConfig(config.deepspeed)
 
     logger.info("Loading Stage 1 model")
     model, tokenizer = load_vocab_extended_model(config)
